@@ -19,6 +19,13 @@
         "command": "distyl.gatherContext",
         "title": "Distyl: Gather Context"
       }
+    ],
+    "keybindings": [
+      {
+        "command": "distyl.gatherContext",
+        "key": "ctrl+shift+c",
+        "mac": "cmd+shift+c"
+      }
     ]
   },
   "scripts": {

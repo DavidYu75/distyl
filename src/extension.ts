@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { ActiveFileCollector } from "./collectors/activeFile";
 import { GitCollector } from "./collectors/git";
 import { RecentEditsCollector } from "./collectors/recentEdits";
+import { formatChunks } from "./format";
 import { Collector } from "./types";
 
 function formatAge(ms: number): string {
@@ -33,8 +34,13 @@ export function activate(context: vscode.ExtensionContext) {
       const chunks = results.flat();
       const now = Date.now();
 
+      const payload = formatChunks(chunks);
+      await vscode.env.clipboard.writeText(payload);
+
       output.clear();
-      output.appendLine(`Gathered ${chunks.length} chunk(s):`);
+      output.appendLine(
+        `Gathered ${chunks.length} chunk(s), ${payload.length} chars copied to clipboard:`
+      );
       for (const chunk of chunks) {
         const size = chunk.content.length;
         const parts: string[] = [`${size} chars`];
@@ -54,7 +60,7 @@ export function activate(context: vscode.ExtensionContext) {
       output.show(true);
 
       vscode.window.showInformationMessage(
-        `Distyl: gathered ${chunks.length} chunk(s)`
+        `Distyl: copied ${chunks.length} chunk(s) (${payload.length} chars) to clipboard`
       );
     }
   );
