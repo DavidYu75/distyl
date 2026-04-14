@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { ActiveFileCollector } from "./collectors/activeFile";
+import { GitCollector } from "./collectors/git";
 import { RecentEditsCollector } from "./collectors/recentEdits";
 import { Collector } from "./types";
 
@@ -22,6 +23,7 @@ export function activate(context: vscode.ExtensionContext) {
   const collectors: Collector[] = [
     new ActiveFileCollector(),
     recentEdits,
+    new GitCollector(),
   ];
 
   const disposable = vscode.commands.registerCommand(
@@ -44,8 +46,9 @@ export function activate(context: vscode.ExtensionContext) {
           parts.push(`edited ${formatAge(now - chunk.metadata.timestamp)}`);
         }
 
+        const label = chunk.path ? ` ${chunk.path}` : "";
         output.appendLine(
-          `  [${chunk.source}] ${chunk.path ?? "(no path)"} — ${parts.join(", ")}`
+          `  [${chunk.source}]${label} — ${parts.join(", ")}`
         );
       }
       output.show(true);
