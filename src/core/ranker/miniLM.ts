@@ -15,7 +15,11 @@ let preload: Promise<EmbedFn> | undefined;
 type EmbedFn = (texts: string[]) => Promise<Float32Array[]>;
 
 async function loadModel(): Promise<EmbedFn> {
-  const { pipeline } = await import('@xenova/transformers');
+  // @xenova/transformers is ESM-only. Using new Function prevents esbuild from
+  // converting this to require() in the CJS bundle — the import() runs natively
+  // in Electron/Node.js which supports ESM dynamic imports from CJS modules.
+  type TransformersModule = { pipeline(task: string, model: string, opts?: Record<string, unknown>): Promise<(input: string | string[], opts?: Record<string, unknown>) => Promise<{ data: Float32Array }>> };
+  const { pipeline } = await (new Function('return import("@xenova/transformers")')() as Promise<TransformersModule>);
   const extractor = await pipeline('feature-extraction', MODEL_ID, {
     quantized: false,
   });
