@@ -1,9 +1,12 @@
 import * as vscode from "vscode";
 import { Collector, ContextChunk } from "../types";
 
+const EDIT_WINDOW = 20;
+
 interface RecentEdit {
   uri: vscode.Uri;
   content: string;
+  editLine: number;
   timestamp: number;
   language: string;
 }
@@ -29,11 +32,14 @@ export class RecentEditsCollector implements Collector, vscode.Disposable {
     if (doc.uri.scheme !== "file") return;
     if (e.contentChanges.length === 0) return;
 
+    const editLine = e.contentChanges[0]?.range?.start?.line ?? 0;
+
     const key = doc.uri.toString();
     this.buffer.delete(key);
     this.buffer.set(key, {
       uri: doc.uri,
       content: doc.getText(),
+      editLine,
       timestamp: Date.now(),
       language: doc.languageId,
     });
@@ -46,20 +52,25 @@ export class RecentEditsCollector implements Collector, vscode.Disposable {
   }
 
   async collect(): Promise<ContextChunk[]> {
-    const activeKey =
-      vscode.window.activeTextEditor?.document.uri.toString();
+    const activeKey = vscode.window.activeTextEditor?.document.uri.toString();
 
     return [...this.buffer.values()]
       .filter((e) => e.uri.toString() !== activeKey)
       .sort((a, b) => b.timestamp - a.timestamp)
-      .map((e) => ({
-        source: "recent-edit" as const,
-        content: e.content,
-        path: vscode.workspace.asRelativePath(e.uri, false),
-        metadata: {
-          timestamp: e.timestamp,
-          language: e.language,
-        },
-      }));
+      .map((e) => {
+        const lines = e.content.split("\n");
+        const startLine = Math.max(0, e.editLine - EDIT_WINDOW);
+        const endLine = Math.min(lines.length - 1, e.editLine + EDIT_WINDOW);
+        return {
+          source: "recent-edit" as const,
+          content: lines.slice(startLine, endLine + 1).join("\n"),
+          path: vscode.workspace.asRelativePath(e.uri, false),
+          metadata: {
+            timestamp: e.timestamp,
+            language: e.language,
+            lineRange: { start: startLine, end: endLine },
+          },
+        };
+      });
   }
 }

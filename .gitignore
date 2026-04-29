@@ -3,3 +3,4 @@ dist/
 *.vsix
 .vscode-test/
 CLAUDE.md
+TODOS.md

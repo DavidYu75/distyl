@@ -1,22 +1,30 @@
-import * as vscode from "vscode";
-import { ActiveFileCollector } from "./collectors/activeFile";
-import { GitCollector } from "./collectors/git";
-import { RecentEditsCollector } from "./collectors/recentEdits";
-import { formatChunks } from "./format";
-import { Collector } from "./types";
-
-function formatAge(ms: number): string {
-  const s = Math.floor(ms / 1000);
-  if (s < 60) return `${s}s ago`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  return `${h}h ago`;
-}
+import * as vscode from 'vscode';
+import { ActiveFileCollector } from './collectors/activeFile';
+import { GitCollector } from './collectors/git';
+import { RecentEditsCollector } from './collectors/recentEdits';
+import { SqliteEmbeddingCache } from './core/cache/sqlite';
+import { runPipeline } from './core/pipeline';
+import { MiniLMRanker, preloadMiniLM } from './core/ranker/miniLM';
+import { renderTrace, writeTrace } from './core/trace';
+import type { BoostContext } from './core/ranker/types';
+import type { Collector } from './types';
 
 export function activate(context: vscode.ExtensionContext) {
-  const output = vscode.window.createOutputChannel("Distyl");
+  const output = vscode.window.createOutputChannel('Distyl');
   context.subscriptions.push(output);
+
+  const statusBar = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Right,
+    100,
+  );
+  context.subscriptions.push(statusBar);
+
+  // Cache and ranker — both fail gracefully if the environment is broken.
+  const cache = new SqliteEmbeddingCache(output);
+  const ranker = new MiniLMRanker(cache);
+
+  // Kick off background model preload so the first command is fast.
+  preloadMiniLM();
 
   const recentEdits = new RecentEditsCollector();
   context.subscriptions.push(recentEdits);
@@ -28,41 +36,77 @@ export function activate(context: vscode.ExtensionContext) {
   ];
 
   const disposable = vscode.commands.registerCommand(
-    "distyl.gatherContext",
+    'distyl.gatherContext',
     async () => {
-      const results = await Promise.all(collectors.map((c) => c.collect()));
-      const chunks = results.flat();
-      const now = Date.now();
+      const start = Date.now();
+      const editor = vscode.window.activeTextEditor;
 
-      const payload = formatChunks(chunks);
-      await vscode.env.clipboard.writeText(payload);
+      // Pre-populate input box with selected text if non-empty.
+      const selectionText =
+        editor && !editor.selection.isEmpty
+          ? editor.document.getText(editor.selection)
+          : undefined;
 
-      output.clear();
-      output.appendLine(
-        `Gathered ${chunks.length} chunk(s), ${payload.length} chars copied to clipboard:`
+      const prompt = await vscode.window.showInputBox({
+        prompt: 'Distyl: what are you asking the AI?',
+        value: selectionText ?? '',
+        placeHolder: 'e.g. fix the auth bug',
+      });
+
+      // undefined → user pressed Esc
+      const promptText = prompt ?? '';
+
+      const boostCtx: BoostContext = {
+        activeFileUri: editor?.document.uri,
+        now: Date.now(),
+      };
+
+      const result = await runPipeline(promptText, {
+        collectors,
+        ranker,
+        boostCtx,
+        outputChannel: output,
+      });
+
+      await vscode.env.clipboard.writeText(result.payload);
+
+      // Show ranker-offline status bar when a prompt was given but ranking failed.
+      if (!result.ranked && promptText) {
+        statusBar.text = '$(warning) Distyl: ranker offline';
+        statusBar.tooltip = 'MiniLM failed to load — raw dump delivered. Check the Distyl output channel.';
+        statusBar.show();
+      } else {
+        statusBar.hide();
+      }
+
+      // Render per-chunk trace to OutputChannel and append to log.jsonl.
+      const elapsed = Date.now() - start;
+      const kept = result.trace.filter((c) => c.kept);
+
+      renderTrace(result.trace, promptText, elapsed, output);
+      writeTrace(
+        {
+          ts: start,
+          prompt: promptText,
+          chunks_in: result.chunksIn,
+          chunks_kept: kept.length,
+          chunks_dropped: result.chunksIn - kept.length,
+          top_scores: kept.slice(0, 5).map((c) => c.score),
+          elapsed_ms: elapsed,
+        },
+        output,
       );
-      for (const chunk of chunks) {
-        const size = chunk.content.length;
-        const parts: string[] = [`${size} chars`];
 
-        if (chunk.metadata?.cursorLine !== undefined) {
-          parts.push(`cursor line ${chunk.metadata.cursorLine + 1}`);
-        }
-        if (chunk.metadata?.timestamp !== undefined) {
-          parts.push(`edited ${formatAge(now - chunk.metadata.timestamp)}`);
-        }
-
-        const label = chunk.path ? ` ${chunk.path}` : "";
-        output.appendLine(
-          `  [${chunk.source}]${label} — ${parts.join(", ")}`
+      // Toast the user if cache writes have been consistently failing.
+      if (cache.sessionSetFailures >= 3) {
+        vscode.window.showWarningMessage(
+          `Distyl: embedding cache has failed ${cache.sessionSetFailures} times this session. ` +
+            'Check ~/.distyl/ permissions.',
         );
       }
-      output.show(true);
 
-      vscode.window.showInformationMessage(
-        `Distyl: copied ${chunks.length} chunk(s) (${payload.length} chars) to clipboard`
-      );
-    }
+      output.show(true);
+    },
   );
 
   context.subscriptions.push(disposable);
