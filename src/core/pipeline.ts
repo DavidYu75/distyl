@@ -14,6 +14,8 @@ export interface ChunkTrace {
 export interface PipelineResult {
   payload: string;
   trace: ChunkTrace[];
+  chunksIn: number;
+  ranked: boolean;  // false → raw dump (no prompt, no ranker, or ranker failed)
 }
 
 export interface PipelineContext {
@@ -33,13 +35,25 @@ export async function runPipeline(
   ctx: PipelineContext,
 ): Promise<PipelineResult> {
   const chunks = await gatherAll(ctx.collectors);
+  const chunksIn = chunks.length;
 
   if (!prompt.trim() || !ctx.ranker) {
     const marker = prompt.trim() ? DEGRADED_MARKER : SKIPPED_MARKER;
-    return { payload: marker + '\n\n' + formatChunks(chunks), trace: [] };
+    return { payload: marker + '\n\n' + formatChunks(chunks), trace: [], chunksIn, ranked: false };
   }
 
-  const scored = await ctx.ranker.score(prompt, chunks, ctx.boostCtx);
+  let scored: import('./ranker/types').ScoredChunk[];
+  try {
+    scored = await ctx.ranker.score(prompt, chunks, ctx.boostCtx);
+  } catch (err) {
+    ctx.outputChannel?.appendLine(`[distyl] ranker failed: ${err}`);
+    return {
+      payload: DEGRADED_MARKER + '\n\n' + formatChunks(chunks),
+      trace: [],
+      chunksIn,
+      ranked: false,
+    };
+  }
 
   const trace: ChunkTrace[] = scored.map((c) => ({
     chunkId: c.chunkId,
@@ -49,7 +63,7 @@ export async function runPipeline(
     reason: 'scored',
   }));
 
-  return { payload: formatChunks(scored), trace };
+  return { payload: formatChunks(scored), trace, chunksIn, ranked: true };
 }
 
 async function gatherAll(collectors: Collector[]): Promise<ContextChunk[]> {
