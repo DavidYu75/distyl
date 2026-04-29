@@ -11,6 +11,7 @@ export interface ChunkMetadata {
   cursorCharacter?: number;
   timestamp?: number;
   language?: string;
+  lineRange?: { start: number; end: number };
 }
 
 export interface ContextChunk {

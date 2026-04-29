@@ -70,12 +70,17 @@ export const window: {
   activeTextEditor: undefined,
 };
 
+export interface ContentChange {
+  range?: { start: { line: number; character: number } };
+  text?: string;
+}
+
 export const workspace: {
   workspaceFolders: Array<{ uri: Uri }> | undefined;
   onDidChangeTextDocument(
     listener: (e: {
       document: { uri: Uri; getText(): string; languageId: string };
-      contentChanges: unknown[];
+      contentChanges: ContentChange[];
     }) => void,
   ): Disposable;
   asRelativePath(uriOrString: Uri | string, includeWorkspaceFolder?: boolean): string;
