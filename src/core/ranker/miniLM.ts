@@ -39,10 +39,20 @@ export function preloadMiniLM(): void {
   if (!preload) preload = loadModel();
 }
 
+/**
+ * Test-only: inject a pre-built embed function so golden-fixture tests can
+ * load @xenova/transformers via a regular import() (handled by vite-node)
+ * instead of the new Function() path (which vm contexts block).
+ */
+export function setEmbedFnForTesting(fn: EmbedFn): void {
+  preload = Promise.resolve(fn);
+}
+
 export class MiniLMRanker implements Ranker {
   constructor(private readonly cache?: SqliteEmbeddingCache) {
-    // Start preload if not already running.
-    if (!preload) preload = loadModel();
+    // Skip autoloading in the Vitest environment — setEmbedFnForTesting()
+    // is called from beforeAll() in the golden-fixture tests instead.
+    if (!preload && !process.env['VITEST']) preload = loadModel();
   }
 
   async score(

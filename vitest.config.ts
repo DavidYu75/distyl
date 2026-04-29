@@ -11,5 +11,8 @@ export default defineConfig({
     environment: 'node',
     include: ['test/**/*.test.ts'],
     passWithNoTests: true,
+    // MiniLMRanker golden tests inject the embed function via
+    // setEmbedFnForTesting() so they never call new Function(...) at all.
+    // No special pool needed.
   },
 });

@@ -1,0 +1,59 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`BaselineRanker — golden rank order > prompt: fix the auth bug 1`] = `
+[
+  "active-file:src/auth.ts:0",
+  "recent-edit:src/parser.ts:1",
+  "recent-edit:tests/auth.test.ts:3",
+  "recent-edit:src/utils.ts:4",
+  "git-diff:src/auth.ts:2",
+]
+`;
+
+exports[`BaselineRanker — golden rank order > prompt: refactor the parser 1`] = `
+[
+  "active-file:src/auth.ts:0",
+  "recent-edit:src/parser.ts:1",
+  "recent-edit:tests/auth.test.ts:3",
+  "recent-edit:src/utils.ts:4",
+  "git-diff:src/auth.ts:2",
+]
+`;
+
+exports[`BaselineRanker — golden rank order > prompt: write a test 1`] = `
+[
+  "active-file:src/auth.ts:0",
+  "recent-edit:src/parser.ts:1",
+  "recent-edit:tests/auth.test.ts:3",
+  "recent-edit:src/utils.ts:4",
+  "git-diff:src/auth.ts:2",
+]
+`;
+
+exports[`MiniLMRanker — golden rank order > prompt: fix the auth bug 1`] = `
+[
+  "git-branch::6",
+  "active-file:src/auth.ts:0",
+  "git-diff:src/auth.ts:2",
+  "git-log::5",
+  "recent-edit:tests/auth.test.ts:3",
+]
+`;
+
+exports[`MiniLMRanker — golden rank order > prompt: refactor the parser 1`] = `
+[
+  "recent-edit:src/parser.ts:1",
+  "git-log::5",
+  "git-diff:src/auth.ts:2",
+  "recent-edit:tests/auth.test.ts:3",
+  "recent-edit:src/utils.ts:4",
+]
+`;
+
+exports[`MiniLMRanker — golden rank order > prompt: write a test 1`] = `
+[
+  "recent-edit:tests/auth.test.ts:3",
+  "git-log::5",
+  "active-file:src/auth.ts:0",
+]
+`;
