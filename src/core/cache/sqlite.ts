@@ -27,8 +27,11 @@ export class SqliteEmbeddingCache {
   private setFailures = 0;
   readonly ready: Promise<void>;
 
-  constructor(private readonly outputChannel?: OutputChannel) {
-    this.ready = this.init();
+  constructor(
+    private readonly outputChannel?: OutputChannel,
+    dbPath = DB_PATH,
+  ) {
+    this.ready = this.init(dbPath);
   }
 
   // ─── public API ──────────────────────────────────────────────────────────
@@ -166,9 +169,9 @@ export class SqliteEmbeddingCache {
 
   // ─── private ─────────────────────────────────────────────────────────────
 
-  private async init(): Promise<void> {
-    fs.mkdirSync(DB_DIR, { recursive: true });
-    this.db = await openDb(DB_PATH);
+  private async init(dbPath: string): Promise<void> {
+    fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+    this.db = await openDb(dbPath);
     await dbRun(this.db, `
       CREATE TABLE IF NOT EXISTS embeddings (
         content_hash    TEXT    NOT NULL,

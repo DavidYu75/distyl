@@ -62,6 +62,70 @@ describe('GitCollector', () => {
     expect(sources).not.toContain('git-diff');
   });
 
+  it('emits no git-diff chunk when diff output is empty', async () => {
+    vscodeMock.workspace.workspaceFolders = [{ uri: vscodeMock.Uri.file('/workspace') }];
+    mockExecFile
+      .mockResolvedValueOnce({ stdout: 'true\n', stderr: '' })
+      .mockResolvedValueOnce({ stdout: 'main\n', stderr: '' })
+      .mockResolvedValueOnce({ stdout: '', stderr: '' })  // empty diff
+      .mockResolvedValueOnce({ stdout: 'abc commit\n', stderr: '' });
+
+    const collector = new GitCollector();
+    const chunks = await collector.collect();
+    expect(chunks.map((c) => c.source)).not.toContain('git-diff');
+  });
+
+  it('splits a multi-hunk diff into one chunk per hunk', async () => {
+    const multiHunkDiff = [
+      'diff --git a/src/auth.ts b/src/auth.ts',
+      '--- a/src/auth.ts',
+      '+++ b/src/auth.ts',
+      '@@ -1,3 +1,4 @@',
+      ' line1',
+      '+added1',
+      ' line2',
+      '@@ -10,3 +11,4 @@',
+      ' line10',
+      '+added2',
+      ' line11',
+    ].join('\n');
+
+    vscodeMock.workspace.workspaceFolders = [{ uri: vscodeMock.Uri.file('/workspace') }];
+    mockExecFile
+      .mockResolvedValueOnce({ stdout: 'true\n', stderr: '' })
+      .mockResolvedValueOnce({ stdout: 'main\n', stderr: '' })
+      .mockResolvedValueOnce({ stdout: multiHunkDiff, stderr: '' })
+      .mockResolvedValueOnce({ stdout: '', stderr: '' });
+
+    const collector = new GitCollector();
+    const chunks = await collector.collect();
+    const diffChunks = chunks.filter((c) => c.source === 'git-diff');
+    expect(diffChunks).toHaveLength(2);
+    expect(diffChunks[0].path).toBe('src/auth.ts');
+    expect(diffChunks[0].content).toContain('@@ -1,3');
+    expect(diffChunks[1].content).toContain('@@ -10,3');
+  });
+
+  it('truncates a hunk exceeding 200 lines with a marker', async () => {
+    // Build a hunk with 210 lines
+    const bigLines = ['diff --git a/big.ts b/big.ts', '--- a/big.ts', '+++ b/big.ts', '@@ -1,210 +1,210 @@'];
+    for (let i = 0; i < 210; i++) bigLines.push(`+line ${i}`);
+    const bigDiff = bigLines.join('\n');
+
+    vscodeMock.workspace.workspaceFolders = [{ uri: vscodeMock.Uri.file('/workspace') }];
+    mockExecFile
+      .mockResolvedValueOnce({ stdout: 'true\n', stderr: '' })
+      .mockResolvedValueOnce({ stdout: 'main\n', stderr: '' })
+      .mockResolvedValueOnce({ stdout: bigDiff, stderr: '' })
+      .mockResolvedValueOnce({ stdout: '', stderr: '' });
+
+    const collector = new GitCollector();
+    const chunks = await collector.collect();
+    const diffChunks = chunks.filter((c) => c.source === 'git-diff');
+    expect(diffChunks).toHaveLength(1);
+    expect(diffChunks[0].content).toContain('[truncated');
+  });
+
   it('returns all three chunk types when all subprocesses succeed', async () => {
     vscodeMock.workspace.workspaceFolders = [{ uri: vscodeMock.Uri.file('/workspace') }];
     mockExecFile

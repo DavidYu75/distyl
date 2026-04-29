@@ -18,11 +18,16 @@ export function applyBoosts(
     score *= RECENCY_BOOST;
   }
 
-  // Proximity: same directory as the active file.
+  // Proximity: chunk is in the same immediate directory as the active file.
+  // activeFileUri.fsPath is absolute; chunk.path is relative (from asRelativePath).
+  // Comparing full paths would never match, so we compare the last directory
+  // segment (immediate parent folder name) of each. False positives are possible
+  // if two different locations share a folder name (e.g., two "src" dirs), which
+  // is an accepted V1 approximation.
   if (ctx.activeFileUri && chunk.path) {
-    const activeDir = dirOf(ctx.activeFileUri.fsPath);
-    const chunkDir = dirOf(chunk.path);
-    if (activeDir && chunkDir && normalizeDir(activeDir) === normalizeDir(chunkDir)) {
+    const activeSeg = lastSeg(dirOf(ctx.activeFileUri.fsPath));
+    const chunkSeg  = lastSeg(dirOf(chunk.path));
+    if (activeSeg && chunkSeg && normalizeDir(activeSeg) === normalizeDir(chunkSeg)) {
       score *= PROXIMITY_BOOST;
     }
   }
@@ -48,6 +53,10 @@ function dirOf(filePath: string): string {
   const parts = filePath.split(/[/\\]/);
   parts.pop(); // remove filename
   return parts.join(sep);
+}
+
+function lastSeg(dir: string): string {
+  return dir.split(/[/\\]/).pop() ?? '';
 }
 
 // Normalize path separators so Windows paths compare correctly.
