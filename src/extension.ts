@@ -2,11 +2,13 @@ import * as vscode from 'vscode';
 import { ActiveFileCollector } from './collectors/activeFile';
 import { GitCollector } from './collectors/git';
 import { RecentEditsCollector } from './collectors/recentEdits';
+import { TerminalCollector } from './collectors/terminal';
 import { SqliteEmbeddingCache } from './core/cache/sqlite';
 import { runPipeline } from './core/pipeline';
 import type { BudgetPreset } from './core/pipeline';
 import { MiniLMRanker, preloadMiniLM } from './core/ranker/miniLM';
 import { renderTrace, writeTrace } from './core/trace';
+import { PreviewPanel } from './core/preview';
 import type { BoostContext } from './core/ranker/types';
 import type { Collector } from './types';
 
@@ -30,10 +32,14 @@ export function activate(context: vscode.ExtensionContext) {
   const recentEdits = new RecentEditsCollector();
   context.subscriptions.push(recentEdits);
 
+  const terminal = new TerminalCollector();
+  context.subscriptions.push(terminal);
+
   const collectors: Collector[] = [
     new ActiveFileCollector(),
     recentEdits,
     new GitCollector(),
+    terminal,
   ];
 
   const disposable = vscode.commands.registerCommand(
@@ -74,6 +80,9 @@ export function activate(context: vscode.ExtensionContext) {
       });
 
       await vscode.env.clipboard.writeText(result.payload);
+
+      // Non-blocking — never delays the clipboard write.
+      PreviewPanel.show(result, promptText);
 
       // Show ranker-offline status bar when a prompt was given but ranking failed.
       if (!result.ranked && promptText) {
