@@ -1,4 +1,3 @@
-import type { Uri } from 'vscode';
 import type { ContextChunk } from '../../types';
 
 export interface ScoredChunk extends ContextChunk {
@@ -7,7 +6,7 @@ export interface ScoredChunk extends ContextChunk {
 }
 
 export interface BoostContext {
-  activeFileUri?: Uri;
+  activeFileUri?: string; // absolute fsPath of the active file
   now: number;
 }
 

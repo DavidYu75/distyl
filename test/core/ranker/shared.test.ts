@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import * as vscodeMock from 'vscode';
 import type { ContextChunk } from '../../../src/types';
 import type { ScoredChunk, BoostContext } from '../../../src/core/ranker/types';
 import { applyBoosts, topK, chunkId } from '../../../src/core/ranker/shared';
@@ -34,22 +33,22 @@ describe('applyBoosts', () => {
   });
 
   it('applies proximity boost (1.2×) when chunk is in the same directory as active file', () => {
-    const activeUri = vscodeMock.Uri.file('/workspace/src/foo.ts');
-    const ctx: BoostContext = { activeFileUri: activeUri, now: NOW };
+    const activeUri = '/workspace/src/foo.ts';
+    const ctx: BoostContext = { activeFileUri: activeUri as string, now: NOW };
     const chunk = makeChunk({ path: 'src/bar.ts' });
     expect(applyBoosts(0.5, chunk, ctx)).toBeCloseTo(0.5 * 1.2);
   });
 
   it('does NOT apply proximity boost when chunk is in a different directory', () => {
-    const activeUri = vscodeMock.Uri.file('/workspace/src/foo.ts');
-    const ctx: BoostContext = { activeFileUri: activeUri, now: NOW };
+    const activeUri = '/workspace/src/foo.ts';
+    const ctx: BoostContext = { activeFileUri: activeUri as string, now: NOW };
     const chunk = makeChunk({ path: 'tests/bar.test.ts' });
     expect(applyBoosts(0.5, chunk, ctx)).toBeCloseTo(0.5);
   });
 
   it('stacks recency and proximity boosts multiplicatively (1.3 × 1.2)', () => {
-    const activeUri = vscodeMock.Uri.file('/workspace/src/foo.ts');
-    const ctx: BoostContext = { activeFileUri: activeUri, now: NOW };
+    const activeUri = '/workspace/src/foo.ts';
+    const ctx: BoostContext = { activeFileUri: activeUri as string, now: NOW };
     const chunk = makeChunk({
       path: 'src/bar.ts',
       metadata: { timestamp: NOW - 60_000 },
