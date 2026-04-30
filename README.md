@@ -23,15 +23,15 @@ AI chat ← clipboard ← [Preview panel shows what was sent]
 
 ## VS Code extension install
 
-1. Install from the VS Code Marketplace *(link TBD — add after publish)*
+1. Install from the VS Code Marketplace _(link TBD — add after publish)_
 2. Press `Cmd+Shift+C` (Mac) / `Ctrl+Shift+C` (Windows/Linux)
 3. Type what you're about to ask → Enter
 4. Paste into Claude / ChatGPT / any AI chat
 
 ## Settings
 
-| Setting | Default | Options |
-|---------|---------|---------|
+| Setting         | Default    | Options                                                            |
+| --------------- | ---------- | ------------------------------------------------------------------ |
 | `distyl.budget` | `standard` | `focused` (4k tokens), `standard` (8k tokens), `deep` (16k tokens) |
 
 ## CLI install
@@ -51,7 +51,7 @@ distyl -p "..." --baseline           # use BaselineRanker (no model download)
 distyl --help
 ```
 
-## How the ranker works (portfolio section)
+## How the ranker works
 
 Distyl runs `all-MiniLM-L6-v2` (a 22M-parameter sentence embedding model) entirely locally via `@xenova/transformers` — no API calls, no data leaves your machine. Each chunk is embedded, cosine similarity is computed against your prompt embedding, then two boosts are applied multiplicatively: **1.3×** for chunks modified in the last 5 minutes, **1.2×** for chunks in the same directory as your active file. The top 20 chunks (noise floor 0.1) are handed to the packer. Embeddings are cached in SQLite keyed by content hash, so repeated runs are near-instant.
 
