@@ -8,8 +8,12 @@ tsconfig.json
 .vscode
 .vscode-test
 .gitignore
+.claude
+CLAUDE.md
+TODOS.md
 **/*.map
 **/*.ts
+dist/cli.js
 !dist/extension.js
 node_modules/@types
 node_modules/typescript
