@@ -10,6 +10,9 @@
     "Other"
   ],
   "main": "./dist/extension.js",
+  "bin": {
+    "distyl": "./dist/cli.js"
+  },
   "activationEvents": [
     "onStartupFinished"
   ],
@@ -26,13 +29,26 @@
         "key": "ctrl+shift+c",
         "mac": "cmd+shift+c"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Distyl",
+      "properties": {
+        "distyl.budget": {
+          "type": "string",
+          "enum": ["focused", "standard", "deep"],
+          "default": "standard",
+          "description": "Token budget preset for packed context. focused=4k, standard=8k, deep=16k."
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "node esbuild.js",
+    "compile:cli": "node esbuild.cli.js",
     "watch": "node esbuild.js --watch",
     "package": "node esbuild.js --production",
+    "package:cli": "node esbuild.cli.js --production",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
     "test": "vitest run"
@@ -47,6 +63,8 @@
   },
   "dependencies": {
     "@vscode/sqlite3": "^5.1.12-vscode",
-    "@xenova/transformers": "^2.17.2"
+    "@xenova/transformers": "^2.17.2",
+    "commander": "^14.0.3",
+    "js-tiktoken": "^1.0.21"
   }
 }
