@@ -23,7 +23,7 @@ AI chat ← clipboard ← [Preview panel shows what was sent]
 
 ## VS Code extension install
 
-1. Install from the VS Code Marketplace _(link TBD — add after publish)_
+1. Install from the VS Code Marketplace [Distyl](https://marketplace.visualstudio.com/items?itemName=David-T-Yu.distyl)
 2. Press `Cmd+Shift+C` (Mac) / `Ctrl+Shift+C` (Windows/Linux)
 3. Type what you're about to ask → Enter
 4. Paste into Claude / ChatGPT / any AI chat
