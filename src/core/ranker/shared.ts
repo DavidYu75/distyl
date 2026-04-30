@@ -25,7 +25,7 @@ export function applyBoosts(
   // if two different locations share a folder name (e.g., two "src" dirs), which
   // is an accepted V1 approximation.
   if (ctx.activeFileUri && chunk.path) {
-    const activeSeg = lastSeg(dirOf(ctx.activeFileUri.fsPath));
+    const activeSeg = lastSeg(dirOf(ctx.activeFileUri));
     const chunkSeg  = lastSeg(dirOf(chunk.path));
     if (activeSeg && chunkSeg && normalizeDir(activeSeg) === normalizeDir(chunkSeg)) {
       score *= PROXIMITY_BOOST;
