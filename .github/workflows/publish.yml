@@ -30,6 +30,9 @@ jobs:
       - name: Build CLI bundle
         run: npm run package:cli
 
+      - name: Copy CLI bundle into cli/
+        run: cp dist/cli.js cli/cli.js
+
       - name: Publish VS Code extension
         run: npx vsce publish
         env:
@@ -37,5 +40,6 @@ jobs:
 
       - name: Publish CLI to npm
         run: npm publish
+        working-directory: cli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

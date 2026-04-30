@@ -1,0 +1,29 @@
+{
+  "name": "distyl-cli",
+  "version": "1.0.1",
+  "description": "Distil your VS Code workspace into a prompt-ready context payload — CLI companion to the Distyl VS Code extension.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DavidYu75/distyl.git"
+  },
+  "keywords": [
+    "ai",
+    "context",
+    "clipboard",
+    "embeddings",
+    "llm",
+    "cli"
+  ],
+  "bin": {
+    "distyl": "./cli.js"
+  },
+  "files": [
+    "cli.js",
+    "../README.md",
+    "../LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}
