@@ -15,11 +15,51 @@ TODOS.md
 **/*.ts
 dist/cli.js
 !dist/extension.js
+
+# Dev-only node_modules
 node_modules/@types
 node_modules/typescript
 node_modules/vitest
 node_modules/@vitest
 node_modules/esbuild
 node_modules/@vscode/test-electron
+node_modules/@vscode/vsce
 node_modules/.bin
 node_modules/.cache
+
+# @vscode/sqlite3 — exclude C++ source and build artifacts, keep prebuilt binary + JS wrapper
+node_modules/@vscode/sqlite3/src
+node_modules/@vscode/sqlite3/deps
+node_modules/@vscode/sqlite3/build/gyp-mac-tool
+node_modules/@vscode/sqlite3/build/Makefile
+node_modules/@vscode/sqlite3/build/binding.Makefile
+node_modules/@vscode/sqlite3/build/config.gypi
+node_modules/@vscode/sqlite3/build/vscode-sqlite3.target.mk
+node_modules/@vscode/sqlite3/binding.gyp
+
+# @xenova/transformers — exclude TS source, keep dist (WASM + bundled JS)
+node_modules/@xenova/transformers/src
+
+# Unnecessary transitive deps — image processing and install-time utilities
+# sharp: image resizing for vision pipelines (not needed for text embeddings)
+node_modules/sharp
+node_modules/color
+node_modules/color-convert
+node_modules/color-name
+node_modules/color-string
+node_modules/simple-swizzle
+node_modules/is-arrayish
+# prebuild-install + its deps: used only at npm install time, not at runtime
+node_modules/prebuild-install
+node_modules/tar
+node_modules/tar-fs
+node_modules/tar-stream
+node_modules/@isaacs
+node_modules/minipass
+node_modules/minizlib
+node_modules/mkdirp-classic
+node_modules/chownr
+node_modules/napi-build-utils
+node_modules/node-abi
+node_modules/detect-libc
+node_modules/node-addon-api
