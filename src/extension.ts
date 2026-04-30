@@ -4,6 +4,7 @@ import { GitCollector } from './collectors/git';
 import { RecentEditsCollector } from './collectors/recentEdits';
 import { SqliteEmbeddingCache } from './core/cache/sqlite';
 import { runPipeline } from './core/pipeline';
+import type { BudgetPreset } from './core/pipeline';
 import { MiniLMRanker, preloadMiniLM } from './core/ranker/miniLM';
 import { renderTrace, writeTrace } from './core/trace';
 import type { BoostContext } from './core/ranker/types';
@@ -57,14 +58,18 @@ export function activate(context: vscode.ExtensionContext) {
       const promptText = prompt ?? '';
 
       const boostCtx: BoostContext = {
-        activeFileUri: editor?.document.uri,
+        activeFileUri: editor?.document.uri.fsPath,
         now: Date.now(),
       };
+
+      const config = vscode.workspace.getConfiguration('distyl');
+      const budget = (config.get<string>('budget') ?? 'standard') as BudgetPreset;
 
       const result = await runPipeline(promptText, {
         collectors,
         ranker,
         boostCtx,
+        budget,
         outputChannel: output,
       });
 
@@ -82,6 +87,10 @@ export function activate(context: vscode.ExtensionContext) {
       // Render per-chunk trace to OutputChannel and append to log.jsonl.
       const elapsed = Date.now() - start;
       const kept = result.trace.filter((c) => c.kept);
+
+      output.appendLine(
+        `[distyl] ${result.chunksIn} chunks in → ${result.chunksKept} kept → ${result.tokenCount} tokens (${budget})`,
+      );
 
       renderTrace(result.trace, promptText, elapsed, output);
       writeTrace(
