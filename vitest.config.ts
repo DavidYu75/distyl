@@ -10,6 +10,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['test/**/*.test.ts'],
+    exclude: ['test/fixtures/**'],
     passWithNoTests: true,
     // MiniLMRanker golden tests inject the embed function via
     // setEmbedFnForTesting() so they never call new Function(...) at all.
