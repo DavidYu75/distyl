@@ -2,7 +2,7 @@
   "name": "distyl",
   "displayName": "Distyl",
   "description": "Distils noisy workspace context into clear, relevant payloads for AI chat.",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "publisher": "David-T-Yu",
   "repository": {
     "type": "git",

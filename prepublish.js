@@ -1,14 +1,16 @@
 /**
  * Pre-publish script for the VS Code extension.
  *
- * Runs the production build and then replaces the real node_modules/sharp
- * with a lightweight stub.  @xenova/transformers does a top-level
- *   import sharp from 'sharp';
- * inside src/utils/image.js.  If the package is missing entirely, the
- * import throws and crashes the whole embedding pipeline.  Distyl only
- * uses text-embedding models (MiniLM) — never image processing — so a
- * no-op stub is sufficient.  This avoids shipping ~25 MB of native
- * libvips/sharp binaries in the VSIX.
+ * Runs the production build and then patches @xenova/transformers so it
+ * doesn't crash when 'sharp' is missing from the VSIX.
+ *
+ * The problem: image.js has `import sharp from 'sharp'` — a static ESM
+ * import that throws at module-link time if sharp isn't installed.  Distyl
+ * excludes sharp from the VSIX (~25 MB savings) because it only uses text
+ * embeddings, never image processing.
+ *
+ * The fix: rewrite that one import as a dynamic try/catch and remove the
+ * hard throw in the else branch so the module loads cleanly without sharp.
  */
 
 const { execSync } = require('child_process');
@@ -18,43 +20,47 @@ const path = require('path');
 // 1. Run the production build.
 execSync('node esbuild.js --production', { stdio: 'inherit' });
 
-// 2. Replace node_modules/sharp with a tiny stub.
-const sharpDir = path.join(__dirname, 'node_modules', 'sharp');
-const sharpLibDir = path.join(sharpDir, 'lib');
+// 2. Patch @xenova/transformers/src/utils/image.js.
+const imageJs = path.join(
+  __dirname,
+  'node_modules',
+  '@xenova',
+  'transformers',
+  'src',
+  'utils',
+  'image.js',
+);
 
-// Back up the real sharp by renaming it (if not already stubbed).
-const marker = path.join(sharpDir, '.distyl-stub');
-if (!fs.existsSync(marker)) {
-  // Wipe the real sharp contents and replace with the stub.
-  const stubContent = `
-'use strict';
-// Stub: sharp is not needed by Distyl (text-embedding only).
-function sharp() {
-  throw new Error('sharp is not available — Distyl only uses text-embedding models.');
+let src = fs.readFileSync(imageJs, 'utf8');
+
+// Replace the static import with a dynamic try/catch.
+// Original:  import sharp from 'sharp';
+// Patched:   let sharp; try { sharp = (await import('sharp')).default; } catch {}
+const staticImport = "import sharp from 'sharp';";
+const dynamicImport =
+  "let sharp; try { sharp = (await import('sharp')).default; } catch { /* sharp unavailable — image processing disabled */ }";
+
+if (!src.includes(staticImport)) {
+  // Already patched or import changed upstream — check for our patch.
+  if (src.includes('try { sharp =')) {
+    console.log('  image.js already patched (skipping)');
+  } else {
+    console.error(
+      'ERROR: Could not find sharp import in image.js — @xenova/transformers may have changed.',
+    );
+    process.exit(1);
+  }
+} else {
+  src = src.replace(staticImport, dynamicImport);
+
+  // Also soften the else-throw so the module loads without sharp.
+  // Original:  throw new Error('Unable to load image processing library.');
+  // Patched:   (no-op — image processing simply won't be available)
+  src = src.replace(
+    "throw new Error('Unable to load image processing library.');",
+    "// sharp not available — image processing disabled (patched by Distyl prepublish.js)",
+  );
+
+  fs.writeFileSync(imageJs, src);
+  console.log('✓ @xenova/transformers patched (sharp import made optional)');
 }
-sharp.format = {};
-sharp.versions = {};
-module.exports = sharp;
-module.exports.default = sharp;
-`;
-
-  const stubPkg = JSON.stringify({
-    name: 'sharp',
-    version: '0.0.0-stub',
-    main: 'lib/index.js',
-    description: 'Stub for @xenova/transformers image.js — Distyl does not use image processing.',
-  }, null, 2) + '\n';
-
-  // Wipe the entire sharp directory and recreate with just the stub.
-  fs.rmSync(sharpDir, { recursive: true, force: true });
-  fs.mkdirSync(sharpLibDir, { recursive: true });
-
-  // Write stub files.
-  fs.writeFileSync(path.join(sharpLibDir, 'index.js'), stubContent);
-  fs.writeFileSync(path.join(sharpDir, 'package.json'), stubPkg);
-
-  // Drop a marker so we don't re-stub on repeated runs.
-  fs.writeFileSync(marker, 'stubbed by prepublish.js\n');
-}
-
-console.log('✓ sharp replaced with stub for VSIX packaging');
