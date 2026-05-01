@@ -16,29 +16,71 @@ TODOS.md
 dist/cli.js
 !dist/extension.js
 
+# cli/ stages the distyl-cli npm package — not part of the VS Code extension
+cli
+
 # Dev-only node_modules
 node_modules/@types
 node_modules/typescript
 node_modules/vitest
 node_modules/@vitest
 node_modules/esbuild
+node_modules/@esbuild
 node_modules/@vscode/test-electron
 node_modules/@vscode/vsce
 node_modules/.bin
 node_modules/.cache
 
-# @vscode/sqlite3 — exclude C++ source and build artifacts, keep prebuilt binary + JS wrapper
+# @vscode/sqlite3 — only need lib/*.js and build/Release/vscode-sqlite3.node.
+# Everything below is C++ source, headers, gyp build files, or compile intermediates
+# (.o files, .d files, generated SQLite source/Makefiles).
 node_modules/@vscode/sqlite3/src
 node_modules/@vscode/sqlite3/deps
+node_modules/@vscode/sqlite3/binding.gyp
 node_modules/@vscode/sqlite3/build/gyp-mac-tool
 node_modules/@vscode/sqlite3/build/Makefile
 node_modules/@vscode/sqlite3/build/binding.Makefile
 node_modules/@vscode/sqlite3/build/config.gypi
 node_modules/@vscode/sqlite3/build/vscode-sqlite3.target.mk
-node_modules/@vscode/sqlite3/binding.gyp
+node_modules/@vscode/sqlite3/build/deps
+node_modules/@vscode/sqlite3/build/node-addon-api
+node_modules/@vscode/sqlite3/build/Release/.deps
+node_modules/@vscode/sqlite3/build/Release/obj
+node_modules/@vscode/sqlite3/build/Release/obj.target
+node_modules/@vscode/sqlite3/build/Release/sqlite3.a
+node_modules/@vscode/sqlite3/build/Release/nothing.a
+node_modules/@vscode/sqlite3/build/Release/node-addon-api
 
-# @xenova/transformers — exclude TS source, keep dist (WASM + bundled JS)
-node_modules/@xenova/transformers/src
+# @xenova/transformers — main is "./src/transformers.js" (regular ESM JS),
+# so src/ MUST be kept. dist/ is the webpack bundle for browsers and is unused
+# at runtime in Node. .cache/ is a pre-downloaded model that should be fetched
+# fresh by each user on first command.
+node_modules/@xenova/transformers/dist
+node_modules/@xenova/transformers/.cache
+node_modules/@xenova/transformers/types
+node_modules/@xenova/transformers/README.md
+
+# onnxruntime-web — main is "dist/ort-web.node.js"; everything else (WASM files,
+# alternate browser bundles, source maps, lib/, types/, docs/) is dead weight in
+# a Node/Electron extension host. Transformers picks ONNX_NODE at runtime, so the
+# web backend is imported but its inference paths are never invoked.
+node_modules/onnxruntime-web/dist/*.wasm
+node_modules/onnxruntime-web/dist/*.map
+node_modules/onnxruntime-web/dist/ort.js
+node_modules/onnxruntime-web/dist/ort.min.js
+node_modules/onnxruntime-web/dist/ort.es5.min.js
+node_modules/onnxruntime-web/dist/ort.es6.min.js
+node_modules/onnxruntime-web/dist/ort.wasm.min.js
+node_modules/onnxruntime-web/dist/ort.wasm-core.min.js
+node_modules/onnxruntime-web/dist/ort.webgl.min.js
+node_modules/onnxruntime-web/dist/ort-web.js
+node_modules/onnxruntime-web/dist/ort-web.min.js
+node_modules/onnxruntime-web/dist/ort-web.es5.min.js
+node_modules/onnxruntime-web/dist/ort-web.es6.min.js
+node_modules/onnxruntime-web/lib
+node_modules/onnxruntime-web/types
+node_modules/onnxruntime-web/docs
+node_modules/onnxruntime-web/README.md
 
 # Unnecessary transitive deps — image processing and install-time utilities
 # sharp: image resizing for vision pipelines (not needed for text embeddings)
