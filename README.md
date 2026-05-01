@@ -80,6 +80,4 @@ Press **F5** in VS Code to launch the Extension Development Host, then press `Cm
 
 ## Demo
 
-<!-- Record a 15-30s GIF: open distyl repo, Cmd+Shift+C, type "fix the
-     ranker threshold", show preview panel, show clipboard paste into Claude.
-     Add here before publishing. -->
+![Distyl demo](demo.gif)
