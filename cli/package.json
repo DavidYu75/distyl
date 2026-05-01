@@ -1,6 +1,6 @@
 {
   "name": "distyl-cli",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "description": "Distil your VS Code workspace into a prompt-ready context payload — CLI companion to the Distyl VS Code extension.",
   "license": "MIT",
   "repository": {

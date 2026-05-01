@@ -82,9 +82,11 @@ node_modules/onnxruntime-web/types
 node_modules/onnxruntime-web/docs
 node_modules/onnxruntime-web/README.md
 
-# Unnecessary transitive deps — image processing and install-time utilities
-# sharp: image resizing for vision pipelines (not needed for text embeddings)
-node_modules/sharp
+# sharp: replaced with a lightweight no-op stub by prepublish.js.
+# The stub is tiny (~300 bytes) and prevents @xenova/transformers from
+# crashing when it does `import sharp from 'sharp'` at module load time.
+# (Distyl only uses text embeddings — never image processing.)
+# sharp's transitive deps — no longer needed with the stub
 node_modules/color
 node_modules/color-convert
 node_modules/color-name

@@ -2,7 +2,7 @@
   "name": "distyl",
   "displayName": "Distyl",
   "description": "Distils noisy workspace context into clear, relevant payloads for AI chat.",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "publisher": "David-T-Yu",
   "repository": {
     "type": "git",
@@ -58,7 +58,7 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run package",
+    "vscode:prepublish": "node prepublish.js",
     "compile": "node esbuild.js",
     "compile:cli": "node esbuild.cli.js",
     "watch": "node esbuild.js --watch",
