@@ -15,7 +15,7 @@ export interface ChunkTrace {
   kept: boolean;
   reason: string;
 }
-
+ 
 export interface PipelineResult {
   payload: string;
   trace: ChunkTrace[];

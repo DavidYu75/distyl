@@ -79,7 +79,10 @@ export function activate(context: vscode.ExtensionContext) {
         outputChannel: output,
       });
 
-      await vscode.env.clipboard.writeText(result.payload);
+      const clipboardText = promptText.trim()
+        ? promptText.trim() + '\n\n' + result.payload
+        : result.payload;
+      await vscode.env.clipboard.writeText(clipboardText);
 
       // Non-blocking — never delays the clipboard write.
       PreviewPanel.show(result, promptText);

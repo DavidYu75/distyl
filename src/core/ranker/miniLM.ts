@@ -13,7 +13,7 @@ const NOISE_FLOOR = 0.1;
 let preload: Promise<EmbedFn> | undefined;
 
 type EmbedFn = (texts: string[]) => Promise<Float32Array[]>;
-
+ 
 async function loadModel(): Promise<EmbedFn> {
   // @xenova/transformers is ESM-only. Using new Function prevents esbuild from
   // converting this to require() in the CJS bundle — the import() runs natively

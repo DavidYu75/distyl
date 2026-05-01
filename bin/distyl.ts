@@ -96,13 +96,13 @@ async function main() {
   } catch (err) {
     // Pipeline-level failure — emit degraded marker and exit.
     const degraded = DEGRADED_MARKER + `\n<!-- error: ${err} -->`;
-    await writeOutput(degraded, useClipboard);
+    await writeOutput(withPrompt(degraded, prompt), useClipboard);
     process.exit(1);
   }
 
   if (!result.ranked) {
     // Soft-fallback path; payload already contains the DEGRADED_MARKER.
-    await writeOutput(result.payload, useClipboard);
+    await writeOutput(withPrompt(result.payload, prompt), useClipboard);
     return;
   }
 
@@ -112,7 +112,12 @@ async function main() {
     `         recent-edits approximate in CLI mode (mtime-based, 24h window)\n`,
   );
 
-  await writeOutput(result.payload, useClipboard);
+  await writeOutput(withPrompt(result.payload, prompt), useClipboard);
+}
+
+function withPrompt(payload: string, prompt: string): string {
+  const p = prompt.trim();
+  return p ? p + '\n\n' + payload : payload;
 }
 
 async function writeOutput(payload: string, useClipboard: boolean): Promise<void> {

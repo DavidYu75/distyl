@@ -2,7 +2,7 @@
   "name": "distyl",
   "displayName": "Distyl",
   "description": "Distils noisy workspace context into clear, relevant payloads for AI chat.",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "publisher": "David-T-Yu",
   "repository": {
     "type": "git",
@@ -50,7 +50,11 @@
       "properties": {
         "distyl.budget": {
           "type": "string",
-          "enum": ["focused", "standard", "deep"],
+          "enum": [
+            "focused",
+            "standard",
+            "deep"
+          ],
           "default": "standard",
           "description": "Token budget preset for packed context. focused=4k, standard=8k, deep=16k."
         }

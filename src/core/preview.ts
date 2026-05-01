@@ -38,7 +38,10 @@ export class PreviewPanel {
 
     this._panel.webview.onDidReceiveMessage((msg) => {
       if (msg.command === 'copyToClipboard') {
-        void vscode.env.clipboard.writeText(this._result.payload);
+        const clipboardText = this._prompt.trim()
+          ? this._prompt.trim() + '\n\n' + this._result.payload
+          : this._result.payload;
+        void vscode.env.clipboard.writeText(clipboardText);
       }
     });
 
