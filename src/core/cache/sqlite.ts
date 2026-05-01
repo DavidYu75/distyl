@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { Database } from '@vscode/sqlite3';
+import type { Database } from '@vscode/sqlite3';
 import type { OutputChannel } from 'vscode';
 
 const DB_DIR = path.join(os.homedir(), '.distyl');
@@ -23,7 +23,7 @@ export function serializeKey(k: CacheKey): CacheKeyStr {
 }
 
 export class SqliteEmbeddingCache {
-  private db!: Database;
+  private db?: Database;
   private setFailures = 0;
   readonly ready: Promise<void>;
 
@@ -42,7 +42,7 @@ export class SqliteEmbeddingCache {
    */
   async get(keys: CacheKey[]): Promise<Map<CacheKeyStr, Float32Array>> {
     await this.ready;
-    if (keys.length === 0) return new Map();
+    if (!this.db || keys.length === 0) return new Map();
 
     // Use serialized key in WHERE for portability across SQLite versions.
     const serialized = keys.map(serializeKey);
@@ -107,6 +107,7 @@ export class SqliteEmbeddingCache {
    */
   async set(key: CacheKey, embedding: Float32Array): Promise<void> {
     await this.ready;
+    if (!this.db) return;
     try {
       const meta = await dbGet<{ value: number }>(
         this.db,
@@ -162,16 +163,31 @@ export class SqliteEmbeddingCache {
   }
 
   async close(): Promise<void> {
+    if (!this.db) return;
     await new Promise<void>((resolve, reject) =>
-      this.db.close((err) => (err ? reject(err) : resolve())),
+      this.db!.close((err) => (err ? reject(err) : resolve())),
     );
   }
 
   // ─── private ─────────────────────────────────────────────────────────────
 
   private async init(dbPath: string): Promise<void> {
+    // Lazy require keeps the native module out of the top-level bundle scope.
+    // If the binary is missing or compiled for a different platform/Electron version,
+    // the cache degrades to a no-op so the extension still activates.
+    let DatabaseCtor: typeof Database;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      DatabaseCtor = (require('@vscode/sqlite3') as { Database: typeof Database }).Database;
+    } catch (err) {
+      this.outputChannel?.appendLine(
+        `[distyl cache] @vscode/sqlite3 unavailable — running without embedding cache: ${err}`,
+      );
+      return;
+    }
+
     fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-    this.db = await openDb(dbPath);
+    this.db = await openDb(DatabaseCtor, dbPath);
     await dbRun(this.db, `
       CREATE TABLE IF NOT EXISTS embeddings (
         content_hash    TEXT    NOT NULL,
@@ -194,6 +210,7 @@ export class SqliteEmbeddingCache {
   }
 
   private async evict(): Promise<void> {
+    if (!this.db) return;
     const meta = await dbGet<{ value: number }>(
       this.db,
       `SELECT value FROM meta WHERE key = 'total_bytes'`,
@@ -229,9 +246,12 @@ export class SqliteEmbeddingCache {
 
 // ─── low-level SQLite helpers (promisify the callback API) ────────────────
 
-function openDb(filePath: string): Promise<Database> {
+function openDb(
+  DatabaseCtor: new (path: string, cb: (err: Error | null) => void) => Database,
+  filePath: string,
+): Promise<Database> {
   return new Promise((resolve, reject) => {
-    const db = new Database(filePath, (err) => (err ? reject(err) : resolve(db)));
+    const db = new DatabaseCtor(filePath, (err) => (err ? reject(err) : resolve(db)));
   });
 }
 
