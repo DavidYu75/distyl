@@ -1,0 +1,23 @@
+Every time you prompt an AI assistant, you do the same unpaid clerical job first: copy the file, copy the error, copy the git diff, trim, paste. Distyl does it in one keystroke — ranks your whole workspace with a local MiniLM model, packs the top chunks into your token budget, hands you the clipboard. Nothing leaves your machine.
+
+https://marketplace.visualstudio.com/items?itemName=David-T-Yu.distyl
+
+
+---
+Shorter variants
+---
+
+[X / Twitter]
+You curate context by hand. Often poorly.
+Distyl: ⌘⇧C → ranks your whole workspace with a local model → packs it to your token budget → clipboard.
+Nothing leaves your machine.
+
+[LinkedIn]
+I kept noticing the same invisible step before every AI prompt: copy the active file, copy the error, copy the git diff, trim it down, paste. The curation happens in your head, usually badly.
+
+So I built Distyl, a VS Code extension that does it in one keystroke. It gathers from your active file, recent edits, git state, and terminal, ranks every chunk against your actual prompt using a local all-MiniLM-L6-v2 model, and greedily packs the highest scorers into a 4k/8k/16k token budget. Automatic selection reaches 87% overlap with context I curated by hand.
+
+No API calls. Nothing leaves your machine.
+
+[Discord / dev channels]
+made a thing: ⌘⇧C in VS Code, type what you're about to ask, and your whole workspace gets ranked + packed to a token budget and dropped on your clipboard. embeddings run locally so nothing leaves the machine

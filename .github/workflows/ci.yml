@@ -24,6 +24,24 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      # The windows-latest image ships Visual Studio 18 (VS 2026). node-gyp
+      # only learned to parse that version string in 12.0.0, and the npm that
+      # comes with Node 20 carries 10.1.0, so @vscode/sqlite3 fails to compile
+      # from source. npm 11 bundles node-gyp ^12.4.0, so upgrading npm is
+      # enough — and it keeps working as new VS releases land, which pinning
+      # the runner to windows-2022 would not.
+      #
+      # Pinned to ^11 rather than latest: npm 12 requires Node 22+, so on
+      # Node 20 `npm@latest` fails with EBADENGINE. npm 11 supports
+      # ^20.17.0 and still carries a node-gyp 12.
+      - name: Upgrade npm for a node-gyp that recognizes Visual Studio 2026
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          npm install -g 'npm@^11'
+          npm --version
+          node "$(npm root -g)/npm/node_modules/node-gyp/bin/node-gyp.js" --version
+
       - run: npm install
 
       - run: npm run check-types

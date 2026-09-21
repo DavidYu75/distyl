@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Distyl — brag</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #1e1e1e;
+      }
+
+      /* Palette lifted verbatim from src/core/preview.ts */
+      :root {
+        --bg: #1e1e1e;
+        --fg: #d4d4d4;
+        --secondary: #9e9e9e;
+        --border: #3a3a3a;
+        --card: #252526;
+        --code: #2d2d2d;
+        --btn: #0e639c;
+        --btn-hover: #1177bb;
+        --active-file: #4a9eff;
+        --recent-edit: #e6a817;
+        --git-diff: #e88230;
+        --terminal: #a855f7;
+        --sans: ui-sans-serif, system-ui, sans-serif;
+        --mono: ui-monospace, monospace;
+      }
+
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: var(--sans);
+      }
+
+      .clip { position: absolute; inset: 0; }
+
+      /* ---------- shared chunk card ---------- */
+      .chunk {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 24px 30px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        width: 1150px;
+      }
+      .badge {
+        font-family: var(--mono);
+        font-size: 25px;
+        letter-spacing: 0.10em;
+        font-weight: 700;
+        white-space: nowrap;
+        color: var(--secondary);
+      }
+      .path {
+        font-family: var(--mono);
+        font-size: 28px;
+        color: var(--fg);
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      .toks {
+        margin-left: auto;
+        font-family: var(--mono);
+        font-size: 25px;
+        color: var(--secondary);
+        white-space: nowrap;
+      }
+
+      /* ---------- scene 1 ---------- */
+      #s1-field { position: absolute; inset: 0; }
+      #s1-field .chunk { position: absolute; opacity: 0.42; width: 760px; }
+      #s1-hook {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+      }
+      #s1-line1 {
+        font-size: 84px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        color: #ffffff;
+      }
+      #s1-line2 {
+        font-size: 48px;
+        font-weight: 400;
+        font-style: italic;
+        color: var(--secondary);
+      }
+      #s1-scrim {
+        position: absolute;
+        inset: 0;
+        background: var(--bg);
+        opacity: 0;
+      }
+
+      /* ---------- scene 2 ---------- */
+      #s2-wrap {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 54px;
+      }
+      #s2-keycap {
+        border: 2px solid var(--border);
+        background: var(--card);
+        border-radius: 12px;
+        padding: 26px 46px;
+        font-family: var(--mono);
+        font-size: 52px;
+        font-weight: 700;
+        color: var(--fg);
+        letter-spacing: 0.06em;
+      }
+      #s2-bar {
+        width: 880px;
+        background: var(--code);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 24px 28px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      #s2-prompt {
+        font-family: var(--mono);
+        font-size: 36px;
+        color: var(--fg);
+        white-space: pre;
+      }
+      #s2-caret {
+        width: 3px;
+        height: 40px;
+        background: var(--active-file);
+      }
+      #s2-flash {
+        position: absolute;
+        inset: 0;
+        background: var(--btn);
+        opacity: 0;
+      }
+
+      /* ---------- scene 3 ---------- */
+      #s3-wrap {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+      }
+      #s3-stack { display: flex; flex-direction: column; gap: 18px; position: relative; }
+      #s3-stack .chunk { position: relative; }
+      .boost {
+        position: absolute;
+        right: -232px;
+        top: 50%;
+        margin-top: -21px;
+        font-family: var(--mono);
+        font-size: 25px;
+        color: var(--recent-edit);
+        border: 1px solid var(--recent-edit);
+        border-radius: 4px;
+        padding: 5px 11px;
+        opacity: 0;
+        white-space: nowrap;
+      }
+      .boost.dir { color: var(--active-file); border-color: var(--active-file); }
+      #s3-meter-wrap {
+        width: 1150px;
+        margin-top: 36px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      #s3-meter-track {
+        height: 16px;
+        width: 100%;
+        background: var(--code);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      #s3-meter-fill {
+        height: 100%;
+        width: 100%;
+        background: var(--btn);
+        transform-origin: left center;
+      }
+      #s3-meter-label {
+        font-family: var(--mono);
+        font-size: 38px;
+        color: var(--fg);
+        text-align: right;
+        opacity: 0;
+      }
+
+      /* ---------- scene 4 ---------- */
+      #s4-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+      #s4-panel {
+        width: 1440px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      #s4-header {
+        display: flex;
+        align-items: center;
+        gap: 34px;
+        padding: 32px 38px;
+        border-bottom: 1px solid var(--border);
+      }
+      #s4-prompt { font-size: 38px; color: var(--fg); }
+      #s4-meta { display: flex; gap: 28px; font-size: 27px; color: var(--secondary); font-family: var(--mono); }
+      #s4-btn {
+        margin-left: auto;
+        background: var(--btn);
+        color: #ffffff;
+        font-size: 27px;
+        padding: 18px 28px;
+        border-radius: 6px;
+        white-space: nowrap;
+      }
+      #s4-cards { padding: 28px 38px 38px; display: flex; flex-direction: column; gap: 18px; }
+      #s4-cards .chunk { width: 100%; background: var(--card); }
+      #s4-cursor {
+        position: absolute;
+        width: 32px;
+        height: 32px;
+        border-left: 3px solid #ffffff;
+        border-top: 3px solid #ffffff;
+        transform: rotate(-45deg);
+        opacity: 0;
+      }
+      #s4-outro {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 22px;
+        opacity: 0;
+      }
+      #s4-mark { font-size: 104px; font-weight: 600; letter-spacing: -0.03em; color: #ffffff; }
+      #s4-claim { font-size: 46px; color: var(--fg); }
+      #s4-sub { font-family: var(--mono); font-size: 24px; color: var(--secondary); margin-top: 14px; }
+    </style>
+  </head>
+
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="21"
+      data-width="1920"
+      data-height="1080"
+    >
+      <!-- ============ SCENE 1 — The ritual (0.0 – 3.5) ============ -->
+      <section id="s1" class="clip" data-start="0" data-duration="3.5" data-track-index="0">
+        <div id="s1-field">
+          <div class="chunk" id="s1-f1" style="left: 190px; top: 210px">
+            <span class="badge" style="color: var(--active-file)">ACTIVE FILE</span>
+            <span class="path">src/core/ranker/miniLM.ts</span>
+            <span class="toks">412 tok</span>
+          </div>
+          <div class="chunk" id="s1-f2" style="left: 880px; top: 400px">
+            <span class="badge" style="color: var(--git-diff)">GIT DIFF</span>
+            <span class="path">+ 24 − 7 · packer.ts</span>
+            <span class="toks">308 tok</span>
+          </div>
+          <div class="chunk" id="s1-f3" style="left: 240px; top: 640px">
+            <span class="badge" style="color: var(--terminal)">TERMINAL</span>
+            <span class="path">npm test · 3 failing</span>
+            <span class="toks">96 tok</span>
+          </div>
+          <div class="chunk" id="s1-f4" style="left: 840px; top: 780px">
+            <span class="badge" style="color: var(--recent-edit)">RECENT EDIT</span>
+            <span class="path">src/collectors/git.ts</span>
+            <span class="toks">221 tok</span>
+          </div>
+        </div>
+        <div id="s1-hook">
+          <div id="s1-line1">You curate context by hand.</div>
+          <div id="s1-line2">Often poorly.</div>
+        </div>
+        <div id="s1-scrim"></div>
+      </section>
+
+      <!-- ============ SCENE 2 — One keystroke (3.5 – 8.5) ============ -->
+      <section id="s2" class="clip" data-start="3.5" data-duration="5" data-track-index="0">
+        <div id="s2-wrap">
+          <div id="s2-keycap">⌘ ⇧ C</div>
+          <div id="s2-bar">
+            <span id="s2-prompt"></span>
+            <span id="s2-caret"></span>
+          </div>
+        </div>
+        <div id="s2-flash"></div>
+      </section>
+
+      <!-- ============ SCENE 3 — Gather, rank, pack (8.5 – 16.0) ============ -->
+      <section id="s3" class="clip" data-start="8.5" data-duration="7.5" data-track-index="0">
+        <div id="s3-wrap">
+          <div id="s3-stack">
+            <div class="chunk" id="s3-c1">
+              <span class="badge" id="s3-b1">ACTIVE FILE</span>
+              <span class="path">src/core/ranker/miniLM.ts</span>
+              <span class="toks">412 tok</span>
+            </div>
+            <div class="chunk" id="s3-c2">
+              <span class="badge" id="s3-b2">RECENT EDIT</span>
+              <span class="path">src/collectors/git.ts</span>
+              <span class="toks">221 tok</span>
+              <span class="boost" id="s3-boost1" data-layout-allow-overflow>×1.3 recent</span>
+            </div>
+            <div class="chunk" id="s3-c3">
+              <span class="badge" id="s3-b3">GIT DIFF</span>
+              <span class="path">+ 24 − 7 · packer.ts</span>
+              <span class="toks">308 tok</span>
+              <span class="boost dir" id="s3-boost2" data-layout-allow-overflow>×1.2 same dir</span>
+            </div>
+            <div class="chunk" id="s3-c4">
+              <span class="badge" id="s3-b4">TERMINAL</span>
+              <span class="path">npm test · 3 failing</span>
+              <span class="toks">96 tok</span>
+            </div>
+            <div class="chunk" id="s3-c5">
+              <span class="badge">GIT LOG</span>
+              <span class="path">a91f2c0 · fix token count</span>
+              <span class="toks">74 tok</span>
+            </div>
+            <div class="chunk" id="s3-c6">
+              <span class="badge">GIT BRANCH</span>
+              <span class="path">feat/auth-retry</span>
+              <span class="toks">31 tok</span>
+            </div>
+          </div>
+          <div id="s3-meter-wrap">
+            <div id="s3-meter-track"><div id="s3-meter-fill"></div></div>
+            <div id="s3-meter-label">8,000 tokens · standard</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SCENE 4 — Payload (16.0 – 21.0) ============ -->
+      <section id="s4" class="clip" data-start="16" data-duration="5" data-track-index="0">
+        <div id="s4-wrap">
+          <div id="s4-panel">
+            <div id="s4-header">
+              <span id="s4-prompt">fix the auth bug</span>
+              <span id="s4-meta">
+                <span>12 chunks</span>
+                <span>8,000 tokens · standard</span>
+              </span>
+              <span id="s4-btn">Copy to clipboard</span>
+            </div>
+            <div id="s4-cards">
+              <div class="chunk">
+                <span class="badge" style="color: var(--active-file)">ACTIVE FILE</span>
+                <span class="path">src/core/ranker/miniLM.ts</span>
+                <span class="toks">412 tok</span>
+              </div>
+              <div class="chunk">
+                <span class="badge" style="color: var(--recent-edit)">RECENT EDIT</span>
+                <span class="path">src/collectors/git.ts</span>
+                <span class="toks">221 tok</span>
+              </div>
+              <div class="chunk">
+                <span class="badge" style="color: var(--git-diff)">GIT DIFF</span>
+                <span class="path">+ 24 − 7 · packer.ts</span>
+                <span class="toks">308 tok</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="s4-cursor"></div>
+        <div id="s4-outro">
+          <div id="s4-mark">Distyl</div>
+          <div id="s4-claim">Nothing leaves your machine.</div>
+          <div id="s4-sub">all-MiniLM-L6-v2 · runs locally · VS Code Marketplace</div>
+        </div>
+      </section>
+
+      <!-- ============ AUDIO ============ -->
+      <!-- data-duration on every one-shot matches the file's real length (ffprobe). -->
+      <!-- level is carried entirely by the timeline so the fade-out tween is not fighting a static gain -->
+      <audio id="bgm" src="assets/music/bgm.mp3" data-start="0" data-duration="21" data-track-index="10" data-volume="1"></audio>
+
+      <audio id="sfx-keycap"  src="assets/sfx/keycap.wav"  data-start="3.70"  data-duration="0.25"  data-track-index="11" data-volume="0.75"></audio>
+      <audio id="sfx-key1"    src="assets/sfx/key1.wav"    data-start="4.35"  data-duration="0.25"  data-track-index="11" data-volume="0.40"></audio>
+      <audio id="sfx-key2"    src="assets/sfx/key2.wav"    data-start="4.70"  data-duration="0.25"  data-track-index="11" data-volume="0.40"></audio>
+      <audio id="sfx-key3"    src="assets/sfx/key3.wav"    data-start="5.05"  data-duration="0.25"  data-track-index="11" data-volume="0.40"></audio>
+      <audio id="sfx-key4"    src="assets/sfx/key4.wav"    data-start="5.40"  data-duration="0.25"  data-track-index="11" data-volume="0.40"></audio>
+      <audio id="sfx-enter"   src="assets/sfx/click-b.ogg" data-start="6.10"  data-duration="0.055" data-track-index="11" data-volume="0.70"></audio>
+
+      <audio id="sfx-snap"    src="assets/sfx/settle.ogg"   data-start="8.96"  data-duration="0.183" data-track-index="12" data-volume="0.55"></audio>
+      <audio id="sfx-badge1"  src="assets/sfx/click-b.ogg"  data-start="9.50"  data-duration="0.055" data-track-index="12" data-volume="0.50"></audio>
+      <audio id="sfx-badge2"  src="assets/sfx/rollover.ogg" data-start="10.54" data-duration="0.057" data-track-index="12" data-volume="0.50"></audio>
+      <audio id="sfx-badge3"  src="assets/sfx/click-b.ogg"  data-start="11.60" data-duration="0.055" data-track-index="12" data-volume="0.50"></audio>
+      <audio id="sfx-badge4"  src="assets/sfx/rollover.ogg" data-start="12.65" data-duration="0.057" data-track-index="12" data-volume="0.50"></audio>
+      <audio id="sfx-meter"   src="assets/sfx/settle.ogg"   data-start="14.40" data-duration="0.183" data-track-index="12" data-volume="0.50"></audio>
+
+      <audio id="sfx-click"   src="assets/sfx/click-b.ogg" data-start="17.91" data-duration="0.055" data-track-index="13" data-volume="0.75"></audio>
+      <audio id="sfx-confirm" src="assets/sfx/confirm.ogg" data-start="18.20" data-duration="0.147" data-track-index="14" data-volume="0.60"></audio>
+    </div>
+
+    <script>
+      const SOURCE_COLORS = {
+        "s3-b1": "#4a9eff", // active-file
+        "s3-b2": "#e6a817", // recent-edit
+        "s3-b3": "#e88230", // git-diff
+        "s3-b4": "#a855f7", // terminal
+      };
+
+      const tl = gsap.timeline({ paused: true });
+
+      /* ---------------- Scene 1 — The ritual (0.0 – 3.5) ---------------- */
+      // Fragments are already on screen, dim and unsorted. They drift.
+      tl.fromTo("#s1-f1", { y: -10, rotation: -1.2 }, { y: 10, rotation: -0.6, duration: 3.5, ease: "sine.inOut" }, 0);
+      tl.fromTo("#s1-f2", { y: 8, rotation: 1.4 }, { y: -8, rotation: 0.8, duration: 3.5, ease: "sine.inOut" }, 0);
+      tl.fromTo("#s1-f3", { y: -6, rotation: 0.9 }, { y: 12, rotation: 1.5, duration: 3.5, ease: "sine.inOut" }, 0);
+      tl.fromTo("#s1-f4", { y: 12, rotation: -0.8 }, { y: -6, rotation: -1.4, duration: 3.5, ease: "sine.inOut" }, 0);
+
+      // The hook lands on the first strong cue and holds.
+      // beat-locked: 1.60s
+      tl.fromTo("#s1-field", { opacity: 1 }, { opacity: 0.3, duration: 0.5, ease: "power2.out" }, 1.45);
+      tl.fromTo("#s1-line1", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.42, ease: "power3.out" }, 1.6);
+      tl.fromTo("#s1-line2", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.38, ease: "power3.out" }, 2.0);
+      // line1 settled 1.60 -> 3.30 = 1.70s, line2 settled 2.00 -> 3.30 = 1.30s
+      tl.to("#s1-scrim", { opacity: 1, duration: 0.24, ease: "power2.in" }, 3.26);
+
+      /* ---------------- Scene 2 — One keystroke (3.5 – 8.5) ---------------- */
+      // Scene-local time = global - 3.5
+      tl.fromTo("#s2-keycap", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.17, ease: "power3.out" }, 3.52);
+
+      // The press: down, hold, release. beat-locked: 3.70s
+      tl.to("#s2-keycap", { y: 10, scale: 0.97, backgroundColor: "#0e639c", duration: 0.09, ease: "power2.in" }, 3.7);
+      tl.to("#s2-keycap", { y: 0, scale: 1, backgroundColor: "#252526", duration: 0.22, ease: "power2.out" }, 3.82);
+
+      tl.fromTo("#s2-bar", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 4.02);
+
+      // Typed prompt — derived from tween progress, so it is seek-safe.
+      const PROMPT = "fix the auth bug";
+      const typer = { n: 0 };
+      tl.to(
+        typer,
+        {
+          n: PROMPT.length,
+          duration: 1.3,
+          ease: "none",
+          onUpdate: () => {
+            document.getElementById("s2-prompt").textContent = PROMPT.slice(0, Math.round(typer.n));
+          },
+        },
+        4.3
+      );
+
+      // Caret blink — finite repeat, never -1.
+      tl.to("#s2-caret", { opacity: 0, duration: 0.28, repeat: 5, yoyo: true, ease: "none" }, 5.7);
+
+      // Enter.
+      tl.to("#s2-flash", { opacity: 0.22, duration: 0.07, ease: "power2.out" }, 6.1);
+      tl.to("#s2-flash", { opacity: 0, duration: 0.2, ease: "power2.in" }, 6.19);
+      tl.to("#s2-wrap", { opacity: 0, duration: 0.3, ease: "power2.in" }, 8.16);
+
+      /* ---------------- Scene 3 — Gather, rank, pack (8.5 – 16.0) ---------------- */
+      // The column snaps together on a strong cue. beat-locked: 8.96s
+      const cards = ["#s3-c1", "#s3-c2", "#s3-c3", "#s3-c4", "#s3-c5", "#s3-c6"];
+      cards.forEach((sel, i) => {
+        tl.fromTo(
+          sel,
+          { opacity: 0, y: 46 - i * 6, scale: 0.985 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.42, ease: "power3.out" },
+          8.96 + i * 0.05
+        );
+      });
+
+      // Source badges ignite one at a time on every OTHER beat (~1.04s apart),
+      // so each label clears the readable floor.
+      // beat-grid: 9.50, 10.54, 11.60, 12.65
+      const badgeTimes = [9.5, 10.54, 11.6, 12.65];
+      ["s3-b1", "s3-b2", "s3-b3", "s3-b4"].forEach((id, i) => {
+        tl.to("#" + id, { color: SOURCE_COLORS[id], duration: 0.26, ease: "power2.out" }, badgeTimes[i]);
+        tl.fromTo("#" + id, { scale: 1 }, { scale: 1.055, duration: 0.14, yoyo: true, repeat: 1, ease: "power2.out" }, badgeTimes[i]);
+      });
+
+      // Ranking boosts, straight from the README's multipliers. They persist to scene end.
+      tl.to("#s3-boost1", { opacity: 1, duration: 0.26, ease: "power2.out" }, 13.18);
+      tl.to("#s3-boost2", { opacity: 1, duration: 0.26, ease: "power2.out" }, 13.7);
+
+      // The packer fits the top chunks into the budget, then drops the overflow.
+      tl.fromTo("#s3-meter-fill", { scaleX: 0 }, { scaleX: 1, duration: 1.0, ease: "power2.inOut" }, 13.4);
+      tl.to("#s3-meter-label", { opacity: 1, duration: 0.3, ease: "power2.out" }, 14.4);
+      tl.to("#s3-c5", { opacity: 0.18, duration: 0.4, ease: "power2.out" }, 14.5);
+      tl.to("#s3-c6", { opacity: 0.18, duration: 0.4, ease: "power2.out" }, 14.62);
+      tl.to("#s3-wrap", { opacity: 0, duration: 0.34, ease: "power2.in" }, 15.62);
+
+      /* ---------------- Scene 4 — Payload (16.0 – 21.0) ---------------- */
+      tl.fromTo("#s4-panel", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 16.05);
+
+      // Cursor travels to the button and presses it.
+      tl.fromTo("#s4-cursor", { opacity: 0, x: 1120, y: 790 }, { opacity: 1, x: 1120, y: 790, duration: 0.2, ease: "none" }, 17.1);
+      tl.to("#s4-cursor", { x: 1500, y: 358, duration: 0.6, ease: "power2.inOut" }, 17.3);
+      tl.to("#s4-btn", { backgroundColor: "#1177bb", scale: 0.97, duration: 0.09, ease: "power2.in" }, 17.91);
+      tl.to("#s4-btn", { scale: 1, duration: 0.2, ease: "power2.out" }, 18.02);
+      tl.to("#s4-cursor", { opacity: 0, duration: 0.2, ease: "power2.in" }, 18.3);
+
+      // Panel recedes, the claim lands in the clear.
+      tl.to("#s4-wrap", { opacity: 0, y: -18, duration: 0.5, ease: "power2.in" }, 18.5);
+      tl.to("#s4-outro", { opacity: 1, duration: 0.45, ease: "power3.out" }, 18.95);
+      tl.fromTo("#s4-mark", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.42, ease: "power3.out" }, 19.0);
+      tl.fromTo("#s4-claim", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 19.24);
+      tl.fromTo("#s4-sub", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 19.55);
+      // claim settled 19.64 -> 21.0 = 1.36s
+
+      // Music clears so the closing claim reads in near-silence.
+      tl.fromTo("#bgm", { volume: 0.34 }, { volume: 0.34, duration: 19.5, ease: "none" }, 0);
+      tl.to("#bgm", { volume: 0, duration: 1.5, ease: "power2.in" }, 19.5);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
