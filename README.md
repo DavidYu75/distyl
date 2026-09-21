@@ -2,6 +2,10 @@
 
 Distil your VS Code workspace into a prompt-ready context payload — automatically ranked, token-budgeted, clipboard-ready.
 
+[![Distyl — launch video](assets/brag.jpg)](assets/brag.mp4)
+
+*21 seconds: the ritual, one keystroke, and what comes back. [Watch](assets/brag.mp4).*
+
 ## The problem
 
 Every time you prompt an AI assistant, you do the same invisible ritual first: copy-paste code snippets, reference docs, error logs, git state, and background into a chat window. The curation happens in your head, often poorly — too little context gets generic answers, too much produces noisy dilution. Distyl automates that step with a single keystroke.
