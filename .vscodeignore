@@ -16,6 +16,11 @@ TODOS.md
 dist/cli.js
 !dist/extension.js
 
+# demo.gif is referenced from the README, which vsce rewrites to the raw
+# GitHub URL at publish time, so the packaged copy is never read. Excluding
+# it keeps ~19MB out of the VSIX.
+demo.gif
+
 # cli/ stages the distyl-cli npm package — not part of the VS Code extension
 cli
 
